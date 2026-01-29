@@ -12,6 +12,12 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
+func NewDB(pool *pgxpool.Pool) *DB {
+	return &DB{
+		pool: pool,
+	}
+}
+
 func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	if tx, ok := From(ctx); ok {
 		return tx.Exec(ctx, sql, args...)
