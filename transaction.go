@@ -1,11 +1,9 @@
-package pgxtx
+package pgdbx
 
 import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type txKey struct{}
@@ -21,41 +19,12 @@ func From(ctx context.Context) (pgx.Tx, bool) {
 	return tx, ok
 }
 
-type DBTX interface {
-	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
-	Query(context.Context, string, ...any) (pgx.Rows, error)
-	QueryRow(context.Context, string, ...any) pgx.Row
-}
-
-type poolDBTX struct {
-	pool *pgxpool.Pool
-}
-
-func (p poolDBTX) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-	return p.pool.Exec(ctx, sql, args...)
-}
-
-func (p poolDBTX) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-	return p.pool.Query(ctx, sql, args...)
-}
-
-func (p poolDBTX) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
-	return p.pool.QueryRow(ctx, sql, args...)
-}
-
-func Exec(ctx context.Context, pool *pgxpool.Pool) DBTX {
-	if tx, ok := From(ctx); ok {
-		return tx
-	}
-	return poolDBTX{pool: pool}
-}
-
-func Transaction(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context) error) error {
+func (db *DB) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	if _, ok := From(ctx); ok {
 		return fn(ctx)
 	}
 
-	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := db.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}

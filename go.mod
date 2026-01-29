@@ -1,4 +1,4 @@
-module github.com/netbill/pgxtx
+module github.com/netbill/pgdbx
 
 go 1.24.0
 
